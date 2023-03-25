@@ -1,5 +1,7 @@
 import { AuthProvider } from "@pankod/refine-core";
 import nookies from "nookies";
+import axios, { AxiosRequestConfig } from "axios";
+
 
 const mockUsers = [
   {
@@ -14,20 +16,50 @@ const mockUsers = [
   },
 ];
 
+const axiosInstance = axios.create();
+
 export const authProvider: AuthProvider = {
-  login: ({ email, username, password, remember }) => {
+  login: async ({ email, username, password, remember }) => {
     // Suppose we actually send a request to the back end here.
     const user = mockUsers[0];
 
+    console.log("****login");
     if (user) {
-      nookies.set(null, "auth", JSON.stringify(user), {
-        maxAge: 30 * 24 * 60 * 60,
-        path: "/",
-      });
-      return Promise.resolve();
-    }
+      console.log(user);
 
-    return Promise.reject();
+      const response = await fetch("http://localhost:5010/user",
+      {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              name: user.username,
+              email: user.email,
+              id: user.email,
+              role: user.roles[0],
+          }),
+      })
+      const data = await response.json();
+
+      if (response.status === 200) {
+          console.log("200 GOT IN POST");
+          // localStorage.setItem(
+          //     "user",
+          //     JSON.stringify({
+          //         ...user,
+          //         avatar: data.avatar,
+          //         userid: data._id,
+          //     }),
+          // );
+          nookies.set(null, "auth", JSON.stringify(user), {
+            maxAge: 30 * 24 * 60 * 60,
+            path: "/",
+          });
+          return Promise.resolve();
+      } else {
+          return Promise.reject();
+      }
+    };
+    
   },
   logout: () => {
     nookies.destroy(null, "auth");
